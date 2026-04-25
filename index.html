@@ -1,0 +1,3302 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>बाcho — Know Before You Go</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;700;900&family=DM+Sans:ital,wght@0,200;0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap"
+        rel="stylesheet" />
+    <style>
+        /* ══════════════════════════════════════════════════
+   CSS RESET + ROOT
+══════════════════════════════════════════════════ */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --white: #ffffff;
+            --off: #f5f5f7;
+            --subtle: #e8e8ed;
+            --mid: #6e6e73;
+            --dark: #1d1d1f;
+            --black: #000000;
+            --red: #ff3b30;
+            --red-soft: rgba(255, 59, 48, 0.12);
+            --green: #34c759;
+            --amber: #ff9f0a;
+            --blue: #0071e3;
+            --glass: rgba(255, 255, 255, 0.72);
+            --glass-dark: rgba(0, 0, 0, 0.72);
+            --blur: saturate(180%) blur(20px);
+            --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-deva: 'Noto Sans Devanagari', sans-serif;
+            --font-mono: 'DM Mono', monospace;
+            --ease-apple: cubic-bezier(0.42, 0, 0.58, 1);
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--black);
+            color: var(--white);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            cursor: none;
+        }
+
+        /* ── Custom cursor ── */
+        #cursor {
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 10000;
+            pointer-events: none;
+            transition: width 0.25s var(--ease-apple), height 0.25s var(--ease-apple),
+                background 0.2s, opacity 0.2s;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+        }
+
+        #cursor.expand {
+            width: 48px;
+            height: 48px;
+            opacity: 0.6;
+        }
+
+        #cursor.click {
+            transform: translate(-50%, -50%) scale(0.7);
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar {
+            width: 0;
+        }
+
+        /* ══════════════════════════════════════════════════
+   AMBIENT BACKGROUND
+══════════════════════════════════════════════════ */
+        #bg-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ══════════════════════════════════════════════════
+   ALARM OVERLAY — HIGH RISK
+══════════════════════════════════════════════════ */
+        #alarmLayer {
+            position: fixed;
+            inset: 0;
+            z-index: 9000;
+            background: radial-gradient(ellipse at 50% 30%, rgba(255, 59, 48, 0.28), transparent 70%);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s;
+        }
+
+        #alarmLayer.armed {
+            animation: alarmPulse 0.55s ease-in-out 3 forwards;
+        }
+
+        @keyframes alarmPulse {
+
+            0%,
+            100% {
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        #alarmBar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9500;
+            height: 44px;
+            background: linear-gradient(90deg, #ff3b30, #c0392b, #ff3b30);
+            background-size: 300% 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            font-family: var(--font-sans);
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            color: white;
+            transform: translateY(-100%);
+            transition: transform 0.6s var(--ease-spring);
+            animation: none;
+        }
+
+        #alarmBar.show {
+            transform: translateY(0);
+            animation: alarmBarSlide 3s linear infinite;
+        }
+
+        @keyframes alarmBarSlide {
+            from {
+                background-position: 0% 0%;
+            }
+
+            to {
+                background-position: 300% 0%;
+            }
+        }
+
+        .alarm-bell {
+            display: inline-block;
+            animation: bellRing 0.35s ease infinite;
+            font-size: 16px;
+        }
+
+        @keyframes bellRing {
+
+            0%,
+            100% {
+                transform: rotate(-18deg);
+            }
+
+            50% {
+                transform: rotate(18deg);
+            }
+        }
+
+        /* ══════════════════════════════════════════════════
+   NAV
+══════════════════════════════════════════════════ */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 52px;
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+            transition: border-color 0.5s, background 0.5s;
+        }
+
+        body.risk-high nav {
+            background: rgba(40, 0, 0, 0.85);
+            border-bottom-color: rgba(255, 59, 48, 0.3);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: baseline;
+            gap: 0;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 19px;
+            letter-spacing: -0.3px;
+        }
+
+        .nav-devanagari {
+            font-family: var(--font-deva);
+            font-weight: 900;
+            font-size: 21px;
+            background: linear-gradient(135deg, #ff6b6b, #ff9f0a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-latin {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            font-weight: 400;
+            text-decoration: none;
+            transition: color 0.2s;
+            letter-spacing: 0.1px;
+        }
+
+        .nav-links a:hover {
+            color: white;
+        }
+
+        .nav-cta {
+            background: white;
+            color: black;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 7px 18px;
+            border-radius: 20px;
+            text-decoration: none;
+            letter-spacing: 0.2px;
+            transition: all 0.25s;
+            border: none;
+            cursor: none;
+        }
+
+        .nav-cta:hover {
+            background: var(--off);
+            transform: scale(1.04);
+        }
+
+        /* ══════════════════════════════════════════════════
+   HERO SECTION
+══════════════════════════════════════════════════ */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            padding: 120px 24px;
+            overflow: hidden;
+        }
+
+        /* Animated orb mesh behind hero text */
+        .hero-mesh {
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 70% 60% at 50% 40%, rgba(255, 59, 48, 0.14), transparent),
+                radial-gradient(ellipse 50% 40% at 20% 70%, rgba(255, 159, 10, 0.1), transparent),
+                radial-gradient(ellipse 60% 50% at 80% 30%, rgba(10, 132, 255, 0.08), transparent);
+            animation: meshShift 18s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes meshShift {
+            0% {
+                transform: scale(1) rotate(0deg);
+            }
+
+            33% {
+                transform: scale(1.05) rotate(1deg);
+            }
+
+            66% {
+                transform: scale(0.98) rotate(-1deg);
+            }
+
+            100% {
+                transform: scale(1.03) rotate(0.5deg);
+            }
+        }
+
+        .hero-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 30px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: revealUp 0.8s var(--ease-apple) 0.3s both;
+        }
+
+        .eyebrow-line {
+            width: 28px;
+            height: 0.5px;
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .hero-headline {
+            font-weight: 200;
+            font-size: clamp(52px, 8.5vw, 96px);
+            line-height: 1.04;
+            letter-spacing: -2px;
+            color: white;
+            margin-bottom: 16px;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: revealUp 0.9s var(--ease-apple) 0.5s both;
+        }
+
+        .hero-headline em {
+            font-style: normal;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff9f0a 50%, #ffd60a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            background-size: 200% auto;
+            animation: gradientSlide 6s linear infinite;
+        }
+
+        @keyframes gradientSlide {
+            from {
+                background-position: 0% 50%;
+            }
+
+            to {
+                background-position: 200% 50%;
+            }
+        }
+
+        .hero-brand-lockup {
+            font-size: clamp(72px, 12vw, 140px);
+            font-weight: 200;
+            letter-spacing: -4px;
+            line-height: 1;
+            margin-bottom: 32px;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: revealUp 0.9s var(--ease-apple) 0.65s both;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-deva {
+            font-family: var(--font-deva);
+            font-weight: 900;
+            font-size: clamp(72px, 12vw, 140px);
+            letter-spacing: -3px;
+            background: linear-gradient(135deg, #ff6b6b, #ff9f0a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+        }
+
+        .hero-latin {
+            font-weight: 200;
+            font-size: clamp(72px, 12vw, 140px);
+            color: rgba(255, 255, 255, 0.85);
+            letter-spacing: -4px;
+        }
+
+        .hero-sub {
+            font-size: clamp(17px, 2.2vw, 21px);
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.55);
+            max-width: 560px;
+            line-height: 1.65;
+            margin-bottom: 48px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: revealUp 0.8s var(--ease-apple) 0.8s both;
+        }
+
+        .hero-sub strong {
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 400;
+        }
+
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: revealUp 0.8s var(--ease-apple) 0.95s both;
+        }
+
+        .btn-primary {
+            background: white;
+            color: black;
+            font-family: var(--font-sans);
+            font-size: 15px;
+            font-weight: 400;
+            padding: 14px 32px;
+            border-radius: 980px;
+            border: none;
+            cursor: none;
+            text-decoration: none;
+            transition: all 0.3s var(--ease-apple);
+            letter-spacing: -0.1px;
+        }
+
+        .btn-primary:hover {
+            background: var(--off);
+            transform: scale(1.04);
+        }
+
+        .btn-secondary {
+            color: rgba(255, 255, 255, 0.8);
+            font-family: var(--font-sans);
+            font-size: 15px;
+            font-weight: 400;
+            padding: 14px 0;
+            border: none;
+            background: none;
+            cursor: none;
+            text-decoration: none;
+            letter-spacing: -0.1px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.2s;
+        }
+
+        .btn-secondary:hover {
+            color: white;
+        }
+
+        .btn-secondary svg {
+            transition: transform 0.25s;
+        }
+
+        .btn-secondary:hover svg {
+            transform: translateX(4px);
+        }
+
+        .hero-stats {
+            margin-top: 80px;
+            display: flex;
+            gap: 0;
+            opacity: 0;
+            animation: revealUp 0.8s var(--ease-apple) 1.1s both;
+        }
+
+        .hero-stat {
+            text-align: center;
+            padding: 0 36px;
+            border-right: 0.5px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .hero-stat:last-child {
+            border: none;
+        }
+
+        .hs-num {
+            font-size: 32px;
+            font-weight: 200;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #ff6b6b, #ff9f0a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hs-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 4px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: var(--font-mono);
+        }
+
+        .scroll-hint {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: var(--font-mono);
+            animation: fadeFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes fadeFloat {
+
+            0%,
+            100% {
+                opacity: 0.3;
+                transform: translateX(-50%) translateY(0);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: translateX(-50%) translateY(-6px);
+            }
+        }
+
+        .scroll-hint-line {
+            width: 0.5px;
+            height: 40px;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.5), transparent);
+        }
+
+        @keyframes revealUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ══════════════════════════════════════════════════
+   SECTION — FULL WIDTH FEAT
+══════════════════════════════════════════════════ */
+        .section {
+            position: relative;
+            z-index: 1;
+            padding: 140px 28px;
+            max-width: 1080px;
+            margin: 0 auto;
+        }
+
+        .section-sm {
+            padding: 80px 28px;
+        }
+
+        .section-tag {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.35);
+            margin-bottom: 18px;
+        }
+
+        .section-headline {
+            font-size: clamp(36px, 5vw, 58px);
+            font-weight: 200;
+            letter-spacing: -1.5px;
+            line-height: 1.1;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .section-headline strong {
+            font-weight: 400;
+        }
+
+        .section-sub {
+            font-size: 17px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.5);
+            line-height: 1.7;
+            max-width: 520px;
+        }
+
+        /* ══════════════════════════════════════════════════
+   MAIN DETECTOR CARD — Apple "product hero" style
+══════════════════════════════════════════════════ */
+        .detector-scene {
+            position: relative;
+            z-index: 1;
+            padding: 0 24px 100px;
+        }
+
+        .detector-wrap {
+            max-width: 860px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.04);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            border-radius: 26px;
+            overflow: hidden;
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            box-shadow:
+                0 0 0 0.5px rgba(255, 255, 255, 0.06) inset,
+                0 80px 160px rgba(0, 0, 0, 0.7),
+                0 0 120px rgba(255, 59, 48, 0.04);
+            transition: box-shadow 1s, border-color 1s;
+        }
+
+        body.risk-high .detector-wrap {
+            border-color: rgba(255, 59, 48, 0.35);
+            box-shadow: 0 0 0 0.5px rgba(255, 59, 48, 0.12) inset, 0 80px 160px rgba(0, 0, 0, 0.7), 0 0 100px rgba(255, 59, 48, 0.2);
+        }
+
+        body.risk-medium .detector-wrap {
+            border-color: rgba(255, 159, 10, 0.3);
+            box-shadow: 0 0 0 0.5px rgba(255, 159, 10, 0.1) inset, 0 80px 160px rgba(0, 0, 0, 0.7), 0 0 80px rgba(255, 159, 10, 0.12);
+        }
+
+        body.risk-safe .detector-wrap {
+            border-color: rgba(52, 199, 89, 0.3);
+            box-shadow: 0 0 0 0.5px rgba(52, 199, 89, 0.1) inset, 0 80px 160px rgba(0, 0, 0, 0.7), 0 0 80px rgba(52, 199, 89, 0.12);
+        }
+
+        /* ── Window chrome ── */
+        .window-chrome {
+            height: 46px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.07);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 0;
+            justify-content: space-between;
+        }
+
+        .chrome-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .chrome-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: none;
+            transition: filter 0.2s;
+        }
+
+        .cd-r {
+            background: #ff5f57;
+            box-shadow: 0 0 6px rgba(255, 95, 87, 0.5);
+        }
+
+        .cd-y {
+            background: #ffbd2e;
+            box-shadow: 0 0 6px rgba(255, 189, 46, 0.4);
+        }
+
+        .cd-g {
+            background: #28ca41;
+            box-shadow: 0 0 6px rgba(40, 202, 65, 0.5);
+        }
+
+        .chrome-title {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chrome-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green);
+            animation: dot-pulse 3s ease infinite;
+        }
+
+        @keyframes dot-pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .chrome-right {
+            width: 80px;
+            text-align: right;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ── Input zone ── */
+        .detector-input-zone {
+            padding: 36px 40px 28px;
+        }
+
+        .input-fieldset {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-floating-label {
+            position: absolute;
+            top: 16px;
+            left: 20px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.25);
+            pointer-events: none;
+            transition: all 0.25s;
+        }
+
+        .detect-textarea {
+            width: 100%;
+            min-height: 220px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            color: white;
+            font-family: var(--font-sans);
+            font-size: 14px;
+            font-weight: 300;
+            line-height: 1.85;
+            padding: 44px 20px 20px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .detect-textarea::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+            font-weight: 300;
+        }
+
+        .detect-textarea:focus {
+            border-color: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+        }
+
+        /* Sample pills */
+        .sample-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+            align-items: center;
+        }
+
+        .sample-label {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.25);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .sample-pill {
+            font-family: var(--font-sans);
+            font-size: 12px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.05);
+            border: 0.5px solid rgba(255, 255, 255, 0.12);
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: none;
+            transition: all 0.22s;
+            letter-spacing: -0.1px;
+        }
+
+        .sample-pill:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.22);
+            color: white;
+            transform: scale(1.03);
+        }
+
+        /* CTA row */
+        .cta-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .meta-text {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.2);
+            letter-spacing: 1px;
+        }
+
+        /* ── THE BUTTON ── */
+        .scan-button {
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            color: black;
+            font-family: var(--font-sans);
+            font-size: 14px;
+            font-weight: 500;
+            padding: 14px 28px;
+            border-radius: 980px;
+            border: none;
+            cursor: none;
+            letter-spacing: -0.1px;
+            transition: all 0.3s var(--ease-apple);
+            min-width: 200px;
+            justify-content: center;
+        }
+
+        .scan-button::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.25) 50%, transparent 60%);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+
+        .scan-button:hover::before {
+            transform: translateX(100%);
+        }
+
+        .scan-button:hover {
+            background: var(--off);
+            transform: scale(1.04);
+            box-shadow: 0 8px 30px rgba(255, 255, 255, 0.12);
+        }
+
+        .scan-button:active {
+            transform: scale(0.98);
+        }
+
+        .scan-button:disabled {
+            opacity: 0.45;
+            transform: none;
+            cursor: not-allowed;
+        }
+
+        .btn-loader {
+            width: 16px;
+            height: 16px;
+            border: 1.5px solid rgba(0, 0, 0, 0.2);
+            border-top-color: black;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ══════════════════════════════════════════════════
+   THINKING STATE — Ultra Premium
+══════════════════════════════════════════════════ */
+        #thinking {
+            display: none;
+            padding: 60px 40px 70px;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        #thinking.active {
+            display: flex;
+        }
+
+        .think-orb {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at 35% 35%, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.02));
+            border: 0.5px solid rgba(255, 255, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+            position: relative;
+            margin-bottom: 40px;
+            animation: orbGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes orbGlow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.1), 0 0 30px rgba(255, 255, 255, 0.05);
+            }
+
+            50% {
+                box-shadow: 0 0 0 16px rgba(255, 255, 255, 0), 0 0 60px rgba(255, 255, 255, 0.1);
+            }
+        }
+
+        .think-orb::before {
+            content: '';
+            position: absolute;
+            inset: -14px;
+            border-radius: 50%;
+            border: 0.5px solid rgba(255, 255, 255, 0.07);
+            animation: ringOut 2.5s ease-out infinite;
+        }
+
+        .think-orb::after {
+            content: '';
+            position: absolute;
+            inset: -28px;
+            border-radius: 50%;
+            border: 0.5px solid rgba(255, 255, 255, 0.04);
+            animation: ringOut 2.5s ease-out 0.5s infinite;
+        }
+
+        @keyframes ringOut {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(1.7);
+            }
+        }
+
+        .think-pct {
+            font-size: 72px;
+            font-weight: 200;
+            letter-spacing: -3px;
+            color: white;
+            line-height: 1;
+            margin-bottom: 8px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .think-pct span {
+            font-size: 28px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .think-stage {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.35);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+            height: 16px;
+            transition: opacity 0.3s;
+        }
+
+        /* Thin progress bar */
+        .think-bar-track {
+            width: 100%;
+            max-width: 380px;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 1px;
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+
+        .think-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.5), white);
+            border-radius: 1px;
+            transition: width 0.5s var(--ease-apple);
+            box-shadow: 0 0 8px white;
+        }
+
+        /* Step list minimal */
+        .think-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .think-step {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 11px 0;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+            font-size: 13px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.2);
+            transition: color 0.4s;
+        }
+
+        .think-step:last-child {
+            border: none;
+        }
+
+        .think-step.active {
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .think-step.done {
+            color: rgba(52, 199, 89, 0.7);
+        }
+
+        .ts-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            flex-shrink: 0;
+            transition: background 0.4s, box-shadow 0.4s;
+        }
+
+        .think-step.active .ts-dot {
+            background: white;
+            box-shadow: 0 0 8px white;
+        }
+
+        .think-step.done .ts-dot {
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+        }
+
+        .ts-label {
+            flex: 1;
+        }
+
+        .ts-tick {
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .think-step.done .ts-tick {
+            opacity: 1;
+        }
+
+        /* ══════════════════════════════════════════════════
+   RESULTS
+══════════════════════════════════════════════════ */
+        #results {
+            display: none;
+            animation: resultReveal 0.7s var(--ease-apple) both;
+        }
+
+        @keyframes resultReveal {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Risk hero card */
+        .result-risk {
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 32px;
+            flex-wrap: wrap;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-risk::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .result-risk.high::before {
+            background: radial-gradient(ellipse at 80% 50%, rgba(255, 59, 48, 0.12), transparent 60%);
+        }
+
+        .result-risk.medium::before {
+            background: radial-gradient(ellipse at 80% 50%, rgba(255, 159, 10, 0.1), transparent 60%);
+        }
+
+        .result-risk.safe::before {
+            background: radial-gradient(ellipse at 80% 50%, rgba(52, 199, 89, 0.1), transparent 60%);
+        }
+
+        .rr-left {}
+
+        .rr-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 5px 12px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+            border: 0.5px solid;
+        }
+
+        .rr-chip.high {
+            color: var(--red);
+            border-color: rgba(255, 59, 48, 0.4);
+            background: rgba(255, 59, 48, 0.1);
+        }
+
+        .rr-chip.medium {
+            color: var(--amber);
+            border-color: rgba(255, 159, 10, 0.4);
+            background: rgba(255, 159, 10, 0.1);
+        }
+
+        .rr-chip.safe {
+            color: var(--green);
+            border-color: rgba(52, 199, 89, 0.4);
+            background: rgba(52, 199, 89, 0.1);
+        }
+
+        .rr-chip-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .rr-level {
+            font-size: 56px;
+            font-weight: 200;
+            letter-spacing: -2px;
+            line-height: 1;
+            margin-bottom: 12px;
+        }
+
+        .result-risk.high .rr-level {
+            color: var(--red);
+        }
+
+        .result-risk.medium .rr-level {
+            color: var(--amber);
+        }
+
+        .result-risk.safe .rr-level {
+            color: var(--green);
+        }
+
+        .rr-type {
+            font-size: 14px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.55);
+            letter-spacing: -0.2px;
+        }
+
+        /* Gauge */
+        .rr-gauge {
+            flex-shrink: 0;
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+
+        .rr-gauge svg {
+            transform: rotate(-90deg);
+        }
+
+        .gauge-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.06);
+            stroke-width: 6;
+        }
+
+        .gauge-fill {
+            fill: none;
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-dasharray: 339;
+            stroke-dashoffset: 339;
+            transition: stroke-dashoffset 1.6s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.5s;
+        }
+
+        .rr-gauge-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .rr-gauge-num {
+            font-size: 36px;
+            font-weight: 200;
+            letter-spacing: -1.5px;
+            line-height: 1;
+        }
+
+        .rr-gauge-sub {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 3px;
+            letter-spacing: 1.5px;
+        }
+
+        /* ── Result body ── */
+        .result-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+        }
+
+        @media(max-width:640px) {
+            .result-body {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .result-pane {
+            padding: 32px 36px;
+            border-right: 0.5px solid rgba(255, 255, 255, 0.06);
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .result-pane:nth-child(2n) {
+            border-right: none;
+        }
+
+        .result-pane.full {
+            grid-column: 1 / -1;
+            border-right: none;
+        }
+
+        .result-pane:last-child {
+            border-bottom: none;
+        }
+
+        .result-pane:nth-last-child(2) {
+            border-bottom: none;
+        }
+
+        .pane-label {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.25);
+            margin-bottom: 22px;
+        }
+
+        /* Signal bars */
+        .sig-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .sig-bar-item {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .sig-bar-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .sig-bar-name {
+            font-size: 12px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.75);
+        }
+
+        .sig-bar-val {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+        .sig-track {
+            height: 2px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .sig-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 2px;
+            transition: width 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Flags */
+        .flags {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .flag {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            font-size: 13px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.55;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 0.5px solid rgba(255, 255, 255, 0.07);
+            border-radius: 10px;
+            animation: flagIn 0.4s var(--ease-apple) both;
+        }
+
+        @keyframes flagIn {
+            from {
+                opacity: 0;
+                transform: translateX(-8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .flag-ico {
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        /* Highlighted text */
+        .highlight-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 0.5px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            line-height: 1.9;
+            max-height: 220px;
+            overflow-y: auto;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .highlight-box::-webkit-scrollbar {
+            width: 0;
+        }
+
+        .hl-pay {
+            background: rgba(255, 59, 48, 0.22);
+            padding: 1px 4px;
+            border-radius: 3px;
+            color: #ff8b85;
+        }
+
+        .hl-urg {
+            background: rgba(255, 159, 10, 0.2);
+            padding: 1px 4px;
+            border-radius: 3px;
+            color: #ffc555;
+        }
+
+        .hl-free {
+            background: rgba(10, 132, 255, 0.2);
+            padding: 1px 4px;
+            border-radius: 3px;
+            color: #74b8ff;
+        }
+
+        .hl-prom {
+            background: rgba(191, 90, 242, 0.2);
+            padding: 1px 4px;
+            border-radius: 3px;
+            color: #da8fff;
+        }
+
+        .hl-beh {
+            background: rgba(255, 105, 97, 0.2);
+            padding: 1px 4px;
+            border-radius: 3px;
+            color: #ff9a94;
+        }
+
+        .hl-legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .hl-l {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .hl-swatch {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+        }
+
+        /* Recommendation */
+        .reco-box {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            padding: 18px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 300;
+            line-height: 1.7;
+            color: rgba(255, 255, 255, 0.75);
+        }
+
+        .reco-box.high {
+            background: rgba(255, 59, 48, 0.07);
+            border: 0.5px solid rgba(255, 59, 48, 0.2);
+        }
+
+        .reco-box.medium {
+            background: rgba(255, 159, 10, 0.07);
+            border: 0.5px solid rgba(255, 159, 10, 0.2);
+        }
+
+        .reco-box.safe {
+            background: rgba(52, 199, 89, 0.07);
+            border: 0.5px solid rgba(52, 199, 89, 0.2);
+        }
+
+        .reco-ico {
+            font-size: 22px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .reco-box strong {
+            color: white;
+            font-weight: 500;
+        }
+
+        /* ══════════════════════════════════════════════════
+   FEATURE SECTION — Apple-style edge-to-edge panels
+══════════════════════════════════════════════════ */
+        .feat-panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: rgba(255, 255, 255, 0.05);
+            border-top: 0.5px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+            position: relative;
+            z-index: 1;
+        }
+
+        @media(max-width:640px) {
+            .feat-panels {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .feat-panel {
+            background: var(--black);
+            padding: 72px 56px;
+            transition: background 0.3s;
+        }
+
+        .feat-panel:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .fp-number {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.2);
+            letter-spacing: 2px;
+            margin-bottom: 40px;
+        }
+
+        .fp-icon {
+            font-size: 38px;
+            margin-bottom: 24px;
+            display: block;
+        }
+
+        .fp-title {
+            font-size: 22px;
+            font-weight: 300;
+            letter-spacing: -0.5px;
+            color: white;
+            margin-bottom: 14px;
+        }
+
+        .fp-desc {
+            font-size: 14px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.45);
+            line-height: 1.75;
+        }
+
+        /* ══════════════════════════════════════════════════
+   HOW IT WORKS — Timeline
+══════════════════════════════════════════════════ */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            margin-top: 64px;
+            position: relative;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 0.5px;
+            background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.12) 15%, rgba(255, 255, 255, 0.12) 85%, transparent);
+        }
+
+        .tl-item {
+            display: flex;
+            gap: 32px;
+            padding: 28px 0;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .tl-item:last-child {
+            border: none;
+        }
+
+        .tl-dot-col {
+            flex-shrink: 0;
+            width: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 4px;
+        }
+
+        .tl-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 0.5px solid rgba(255, 255, 255, 0.2);
+            background: black;
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s;
+        }
+
+        .tl-item:hover .tl-dot {
+            background: white;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+            border-color: white;
+        }
+
+        .tl-body {}
+
+        .tl-num {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.2);
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        .tl-title {
+            font-size: 17px;
+            font-weight: 400;
+            letter-spacing: -0.3px;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .tl-desc {
+            font-size: 14px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.45);
+            line-height: 1.7;
+        }
+
+        /* ══════════════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════════════ */
+        footer {
+            position: relative;
+            z-index: 1;
+            border-top: 0.5px solid rgba(255, 255, 255, 0.08);
+            padding: 64px 40px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+        }
+
+        .footer-inner {
+            max-width: 1080px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .footer-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 32px;
+        }
+
+        .footer-brand {
+            display: flex;
+            align-items: baseline;
+            gap: 0;
+        }
+
+        .f-deva {
+            font-family: var(--font-deva);
+            font-weight: 900;
+            font-size: 32px;
+            background: linear-gradient(135deg, #ff6b6b, #ff9f0a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .f-lat {
+            font-size: 29px;
+            font-weight: 200;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .footer-tagline {
+            font-size: 13px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.35);
+            line-height: 1.7;
+            max-width: 280px;
+            margin-top: 10px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .footer-col h5 {
+            font-size: 11px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+
+        .footer-col a {
+            display: block;
+            font-size: 13px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.3);
+            margin-bottom: 10px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-col a:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding-top: 24px;
+            border-top: 0.5px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .footer-copy {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.2);
+            letter-spacing: 1px;
+        }
+
+        .footer-sdgs {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .sdg {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 1px;
+            padding: 5px 12px;
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+        }
+
+        /* ══════════════════════════════════════════════════
+   SCROLL ANIMATIONS
+══════════════════════════════════════════════════ */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.8s var(--ease-apple), transform 0.8s var(--ease-apple);
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media(max-width:768px) {
+            nav {
+                padding: 0 20px;
+            }
+
+            .detector-input-zone {
+                padding: 24px 24px 20px;
+            }
+
+            .result-pane {
+                padding: 24px 24px;
+            }
+
+            .feat-panel {
+                padding: 48px 32px;
+            }
+
+            .section {
+                padding: 80px 20px;
+            }
+
+            .hero-stats {
+                display: none;
+            }
+
+            .footer-top {
+                flex-direction: column;
+            }
+        }
+
+        /* ══════════════════════════════════════════════════
+           INBOX SCANNER
+        ══════════════════════════════════════════════════ */
+        #inbox {
+            padding: 100px 24px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .inbox-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 0.5px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            overflow: hidden;
+            backdrop-filter: blur(40px);
+            min-height: 400px;
+        }
+
+        .inbox-header {
+            padding: 32px 40px;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .inbox-title h2 {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+
+        .inbox-title p {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .inbox-tabs {
+            display: flex;
+            gap: 8px;
+            margin-top: 24px;
+            padding: 0 40px;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .inbox-tab {
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .inbox-tab:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .inbox-tab.active {
+            color: white;
+            border-bottom-color: white;
+        }
+
+        .tab-count {
+            font-size: 10px;
+            font-family: var(--font-mono);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .inbox-tab.active.high .tab-count { background: rgba(255, 59, 48, 0.2); color: var(--red); }
+        .inbox-tab.active.medium .tab-count { background: rgba(255, 159, 10, 0.2); color: var(--amber); }
+        .inbox-tab.active.safe .tab-count { background: rgba(52, 199, 89, 0.2); color: var(--green); }
+
+        .inbox-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .email-item {
+            padding: 24px 40px;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
+            display: grid;
+            grid-template-columns: 200px 1fr 120px;
+            align-items: center;
+            gap: 24px;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .email-item:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .email-from {
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.85);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .email-content {
+            overflow: hidden;
+        }
+
+        .email-subject {
+            font-size: 14px;
+            font-weight: 400;
+            color: white;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .email-snippet {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .email-risk {
+            text-align: right;
+        }
+
+        .risk-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 0.5px solid;
+        }
+
+        .risk-badge.high { color: var(--red); border-color: rgba(255, 59, 48, 0.3); background: rgba(255, 59, 48, 0.1); }
+        .risk-badge.medium { color: var(--amber); border-color: rgba(255, 159, 10, 0.3); background: rgba(255, 159, 10, 0.1); }
+        .risk-badge.safe { color: var(--green); border-color: rgba(52, 199, 89, 0.3); background: rgba(52, 199, 89, 0.1); }
+
+        .email-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .btn-spam {
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--red);
+            border: 0.5px solid rgba(255, 59, 48, 0.3);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            cursor: pointer;
+            transition: all 0.2s;
+            opacity: 0;
+            transform: translateY(4px);
+        }
+
+        .email-item:hover .btn-spam {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .btn-spam:hover {
+            background: var(--red);
+            color: white;
+        }
+
+        .btn-spam.loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .attachment-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .vt-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 0.5px solid rgba(255, 255, 255, 0.07);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .vt-url {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            max-width: 70%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: var(--font-mono);
+        }
+        .vt-stat {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .vt-stat.danger { color: var(--red); }
+        .vt-stat.safe { color: var(--green); }
+        .vt-stat.warn { color: var(--amber); }
+
+        .attachment-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: rgba(255, 255, 255, 0.5);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .attachment-pill.danger {
+            color: var(--red);
+            background: rgba(255, 59, 48, 0.1);
+            border-color: rgba(255, 59, 48, 0.3);
+        }
+
+        #authSection {
+            text-align: center;
+            padding: 80px 40px;
+        }
+
+        .btn-gmail {
+            background: #EA4335;
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 980px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .btn-gmail:hover {
+            background: #d33828;
+            transform: scale(1.04);
+            box-shadow: 0 12px 40px rgba(234, 67, 53, 0.3);
+        }
+
+        .btn-refresh {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 0.5px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-refresh:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .loading-inbox {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 100px;
+            color: rgba(255, 255, 255, 0.4);
+            gap: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── Cursor ── -->
+    <div id="cursor"></div>
+
+    <!-- ── Background canvas ── -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- ── Alarm effects ── -->
+    <div id="alarmLayer"></div>
+    <div id="alarmBar">
+        <span class="alarm-bell">🔔</span>
+        SCAM DETECTED — HIGH RISK — DO NOT PROCEED
+        <span class="alarm-bell">🔔</span>
+    </div>
+
+    <!-- ══ NAV ══ -->
+    <nav>
+        <a class="nav-brand" href="#">
+            <span class="nav-devanagari">बा</span><span class="nav-latin">cho</span>
+        </a>
+        <div class="nav-links">
+            <a href="#detect">Detect</a>
+            <a href="#how">How it works</a>
+            <a href="#scams">Scam types</a>
+            <a href="#detect" class="nav-cta">Try for Free</a>
+        </div>
+    </nav>
+
+    <!-- ══ HERO ══ -->
+    <section class="hero">
+        <div class="hero-mesh"></div>
+
+        <div class="hero-eyebrow">
+            <span class="eyebrow-line"></span>
+            AI-Powered Scam Detection for Students
+            <span class="eyebrow-line"></span>
+        </div>
+
+        <p class="hero-headline">Protect yourself<br>from what you<br>can't always see.</p>
+
+        <div class="hero-brand-lockup">
+            <span class="hero-deva">बा</span><span class="hero-latin">cho.</span>
+        </div>
+
+        <p class="hero-sub">
+            Paste any internship or job offer. <strong>बाcho</strong> instantly
+            identifies hidden payment traps, urgency manipulation, and
+            fake promises — before you fall for them.
+        </p>
+
+        <div class="hero-actions">
+            <a href="#detect" class="btn-primary">Analyze a message</a>
+            <a href="#how" class="btn-secondary">
+                How it works
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+            </a>
+        </div>
+
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <div class="hs-num">94%</div>
+                <div class="hs-label">Accuracy</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hs-num">12+</div>
+                <div class="hs-label">Patterns</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hs-num">₹0</div>
+                <div class="hs-label">Always free</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hs-num">&lt;2s</div>
+                <div class="hs-label">Analysis time</div>
+            </div>
+        </div>
+
+        <div class="scroll-hint">
+            <div class="scroll-hint-line"></div>
+            Scroll
+        </div>
+    </section>
+
+    <!-- ══ DETECTOR ══ -->
+    <section class="detector-scene" id="detect">
+        <div class="detector-wrap">
+            <!-- Window chrome -->
+            <div class="window-chrome">
+                <div class="chrome-dots">
+                    <div class="chrome-dot cd-r"></div>
+                    <div class="chrome-dot cd-y"></div>
+                    <div class="chrome-dot cd-g"></div>
+                </div>
+                <div class="chrome-title">
+                    <span class="chrome-indicator"></span>
+                    बाcho Detection Engine
+                </div>
+                <div class="chrome-right" id="charCount">0 chars</div>
+            </div>
+
+            <!-- Input zone -->
+            <div class="detector-input-zone" id="inputZone">
+                <div class="input-fieldset">
+                    <div class="input-floating-label">Message</div>
+                    <textarea id="msgInput" class="detect-textarea"
+                        placeholder="Paste any internship or job offer message here — from WhatsApp, email, LinkedIn, or Telegram..."
+                        oninput="updateCount()"></textarea>
+                </div>
+
+                <div class="sample-row">
+                    <span class="sample-label">Try a sample:</span>
+                    <button class="sample-pill" onclick="load('scam1')">💰 Payment trap</button>
+                    <button class="sample-pill" onclick="load('scam2')">🎭 Fake free offer</button>
+                    <button class="sample-pill" onclick="load('legit')">✅ Legitimate</button>
+                    <button class="sample-pill" onclick="load('medium')">⚠️ Suspicious</button>
+                </div>
+
+                <div class="cta-row">
+                    <span class="meta-text" id="inputMeta">0 characters · Ready</span>
+                    <button class="scan-button" id="scanBtn" onclick="doAnalyze()">
+                        <span id="btnLabel">Analyze with बाcho</span>
+                        <div class="btn-loader" id="btnLoader"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Thinking -->
+            <div id="thinking">
+                <div class="think-orb" id="thinkOrb">🧠</div>
+                <div class="think-pct" id="thinkPct">0<span>%</span></div>
+                <div class="think-stage" id="thinkStage">Initializing...</div>
+                <div class="think-bar-track">
+                    <div class="think-bar-fill" id="thinkBar"></div>
+                </div>
+                <div class="think-steps">
+                    <div class="think-step" id="step0"><span class="ts-dot"></span><span class="ts-label">Text cleaning
+                            &amp;
+                            tokenization</span><span class="ts-tick">✓</span></div>
+                    <div class="think-step" id="step1"><span class="ts-dot"></span><span class="ts-label">Linguistic
+                            feature
+                            extraction</span><span class="ts-tick">✓</span></div>
+                    <div class="think-step" id="step2"><span class="ts-dot"></span><span class="ts-label">Pattern
+                            recognition</span><span class="ts-tick">✓</span></div>
+                    <div class="think-step" id="step3"><span class="ts-dot"></span><span class="ts-label">Risk
+                            classification</span><span class="ts-tick">✓</span></div>
+                    <div class="think-step" id="step4"><span class="ts-dot"></span><span class="ts-label">Report
+                            generation</span><span class="ts-tick">✓</span></div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div id="results">
+                <!-- Risk hero -->
+                <div id="rrBanner" class="result-risk">
+                    <div class="rr-left">
+                        <div id="rrChip" class="rr-chip"></div>
+                        <div id="rrLevel" class="rr-level"></div>
+                        <div id="rrType" class="rr-type"></div>
+                    </div>
+                    <div class="rr-gauge">
+                        <svg width="120" height="120" viewBox="0 0 120 120">
+                            <circle class="gauge-bg" cx="60" cy="60" r="54" />
+                            <circle class="gauge-fill" id="gaugeFill" cx="60" cy="60" r="54" />
+                        </svg>
+                        <div class="rr-gauge-text">
+                            <div class="rr-gauge-num" id="gaugeNum"></div>
+                            <div class="rr-gauge-sub">RISK</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result body -->
+                <div class="result-body">
+                    <div class="result-pane">
+                        <div class="pane-label">Signal Breakdown</div>
+                        <div class="sig-bars" id="sigBars"></div>
+                    </div>
+                    <div class="result-pane">
+                        <div class="pane-label">Red Flags</div>
+                        <div class="flags" id="flagsEl"></div>
+                    </div>
+                    <div class="result-pane full">
+                        <div class="pane-label">Highlighted Phrases</div>
+                        <div class="highlight-box" id="hlText"></div>
+                        <div class="hl-legend">
+                            <div class="hl-l">
+                                <div class="hl-swatch" style="background:rgba(255,59,48,0.55)"></div>Payment
+                            </div>
+                            <div class="hl-l">
+                                <div class="hl-swatch" style="background:rgba(255,159,10,0.5)"></div>Urgency
+                            </div>
+                            <div class="hl-l">
+                                <div class="hl-swatch" style="background:rgba(10,132,255,0.5)"></div>Free+Pay
+                            </div>
+                            <div class="hl-l">
+                                <div class="hl-swatch" style="background:rgba(191,90,242,0.5)"></div>Promises
+                            </div>
+                            <div class="hl-l">
+                                <div class="hl-swatch" style="background:rgba(255,105,97,0.5)"></div>Behavioral
+                            </div>
+                        </div>
+                    </div>
+                    <div class="result-pane full">
+                        <div class="pane-label">Recommendation</div>
+                        <div id="recoBox" class="reco-box"></div>
+                    </div>
+                    <div class="result-pane full" id="vtPane" style="display: none;">
+                        <div class="pane-label">VirusTotal Intelligence (Link Scanning)</div>
+                        <div id="vtList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ INBOX SCANNER ══ -->
+    <section id="inbox" class="fade-in">
+        <div class="section-tag">GMAIL INTEGRATION</div>
+        <h2 class="section-headline">Scan your inbox.<br><strong>Stay ahead of threats.</strong></h2>
+        
+        <div class="inbox-card">
+            <!-- Unauthorized state -->
+            <div id="authSection">
+                <div class="think-orb" style="margin-inline: auto;">📫</div>
+                <h3 style="font-size: 24px; margin-bottom: 12px;">Connect your Gmail</h3>
+                <p style="color: rgba(255,255,255,0.4); margin-bottom: 32px; max-width: 400px; margin-inline: auto;">
+                    Automatically analyze your recent emails for internship scams and suspicious attachments.
+                </p>
+                <a href="/auth/google" class="btn-gmail">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C9.03,19.27 6.59,17.38 6.59,13.21C6.59,9.03 9.07,7.15 12.19,7.15C14.38,7.15 15.8,8.17 15.8,8.17L17.45,6.11C17.45,6.11 15.46,4.59 12.19,4.59C7.24,4.59 3.84,8.21 3.84,13.21C3.84,18.21 7.24,21.83 12.19,21.83C17.47,21.83 21.6,18.15 21.6,12.49C21.6,11.64 21.35,11.1 21.35,11.1V11.1Z"/>
+                    </svg>
+                    Connect with Google
+                </a>
+            </div>
+
+            <!-- Authorized state -->
+            <div id="inboxView" style="display: none;">
+                <div class="inbox-header" style="border-bottom: none; padding-bottom: 8px;">
+                    <div class="inbox-title">
+                        <h2>Your Inbox Analysis</h2>
+                        <p id="inboxStatus">Checking last 30 emails...</p>
+                    </div>
+                    <div class="inbox-actions">
+                        <button id="moveAllSpamBtn" class="btn-refresh" onclick="moveAllHighRiskToSpam()" style="margin-right: 8px; border-color: rgba(255, 59, 48, 0.4); color: #ff8b85; display: none;">
+                            ⚠️ Move All High Risk to Spam
+                        </button>
+                        <button class="btn-refresh" onclick="fetchEmails()">
+                            <span>↻</span> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="inbox-tabs">
+                    <div class="inbox-tab active" id="tab-all" onclick="filterInbox('ALL')">
+                        All <span class="tab-count" id="count-all">0</span>
+                    </div>
+                    <div class="inbox-tab high" id="tab-high" onclick="filterInbox('HIGH')">
+                        High Risk <span class="tab-count" id="count-high">0</span>
+                    </div>
+                    <div class="inbox-tab medium" id="tab-medium" onclick="filterInbox('MEDIUM')">
+                        Moderate <span class="tab-count" id="count-medium">0</span>
+                    </div>
+                    <div class="inbox-tab safe" id="tab-safe" onclick="filterInbox('LOW')">
+                        Safe <span class="tab-count" id="count-safe">0</span>
+                    </div>
+                </div>
+                <div class="inbox-list" id="emailList">
+                    <!-- Emails will be injected here -->
+                    <div class="loading-inbox">
+                        <div class="btn-loader" style="display: block; width: 24px; height: 24px; border-width: 2px;"></div>
+                        <span>Fetching and analyzing your emails...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ FEATURES ══ -->
+    <div class="feat-panels fade-in">
+        <div class="feat-panel">
+            <div class="fp-number">01</div>
+            <span class="fp-icon">🔬</span>
+            <div class="fp-title">Deep NLP Analysis</div>
+            <div class="fp-desc">Twelve distinct linguistic signals — payment intent, urgency manipulation, fake-free
+                contradictions, behavioral pressure patterns — extracted and scored in under two seconds.</div>
+        </div>
+        <div class="feat-panel">
+            <div class="fp-number">02</div>
+            <span class="fp-icon">🎯</span>
+            <div class="fp-title">Trained on Real Scams</div>
+            <div class="fp-desc">Patterns sourced from real Indian internship scam databases. The model understands how
+                scammers phrase offers to sound legitimate while hiding payment requirements.</div>
+        </div>
+        <div class="feat-panel">
+            <div class="fp-number">03</div>
+            <span class="fp-icon">💡</span>
+            <div class="fp-title">Explainable Results</div>
+            <div class="fp-desc">Every detection is explained. Specific phrases are highlighted. You see exactly what
+                triggered each flag — not a black-box verdict, but a transparent analysis you can act on.</div>
+        </div>
+        <div class="feat-panel">
+            <div class="fp-number">04</div>
+            <span class="fp-icon">🔒</span>
+            <div class="fp-title">Completely Private</div>
+            <div class="fp-desc">Analysis runs entirely in your browser. No message content is ever sent to any server.
+                Your
+                data stays yours — always, without exceptions.</div>
+        </div>
+    </div>
+
+    <!-- ══ HOW IT WORKS ══ -->
+    <section class="section fade-in" id="how">
+        <div class="section-tag">Process</div>
+        <h2 class="section-headline">A five-step pipeline.<br><strong>Milliseconds to safety.</strong></h2>
+
+        <div class="timeline">
+            <div class="tl-item">
+                <div class="tl-dot-col">
+                    <div class="tl-dot"></div>
+                </div>
+                <div class="tl-body">
+                    <div class="tl-num">Step 01</div>
+                    <div class="tl-title">Text Preprocessing</div>
+                    <div class="tl-desc">Emoji normalization, currency symbol detection, sentence segmentation, and
+                        tokenization
+                        prepare the raw message for deep analysis.</div>
+                </div>
+            </div>
+            <div class="tl-item">
+                <div class="tl-dot-col">
+                    <div class="tl-dot"></div>
+                </div>
+                <div class="tl-body">
+                    <div class="tl-num">Step 02</div>
+                    <div class="tl-title">Feature Extraction</div>
+                    <div class="tl-desc">12 feature vectors are computed: payment intent, urgency density, free-then-pay
+                        contradiction, promise plausibility, behavioral pressure, and more.</div>
+                </div>
+            </div>
+            <div class="tl-item">
+                <div class="tl-dot-col">
+                    <div class="tl-dot"></div>
+                </div>
+                <div class="tl-body">
+                    <div class="tl-num">Step 03</div>
+                    <div class="tl-title">Pattern Matching</div>
+                    <div class="tl-desc">Over 50 regular expressions and lexical rules match specific scam phrases,
+                        informal
+                        payment channels, and suspicious link patterns in real-time.</div>
+                </div>
+            </div>
+            <div class="tl-item">
+                <div class="tl-dot-col">
+                    <div class="tl-dot"></div>
+                </div>
+                <div class="tl-body">
+                    <div class="tl-num">Step 04</div>
+                    <div class="tl-title">Risk Scoring</div>
+                    <div class="tl-desc">A weighted classifier combines all signals into a 0–100 risk score. Threshold
+                        logic
+                        determines scam category: HIGH, MEDIUM, or LOW risk.</div>
+                </div>
+            </div>
+            <div class="tl-item">
+                <div class="tl-dot-col">
+                    <div class="tl-dot"></div>
+                </div>
+                <div class="tl-body">
+                    <div class="tl-num">Step 05</div>
+                    <div class="tl-title">Explainable Report</div>
+                    <div class="tl-desc">Each flagged phrase is highlighted in context. A human-readable recommendation
+                        tells you
+                        exactly what to do next — specific to the threat type detected.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ SCAM TYPES ══ -->
+    <section class="section fade-in" id="scams">
+        <div class="section-tag">Threat Intelligence</div>
+        <h2 class="section-headline">Four vectors.<br><strong>One detector.</strong></h2>
+        <p class="section-sub">बाcho identifies all common patterns used to target students in India's internship and
+            job
+            market.</p>
+
+        <div class="timeline" style="margin-top:48px;">
+            <div class="tl-item">
+                <div class="tl-dot-col">
+                    <div class="tl-dot"></div>
+                </div>
+                <div class="tl-body">
+                    <div class="tl-num">💰 Type 01</div>
+                    <div class="tl-title">Hidden Payment Trap</div>
+                    <div class="tl-desc">Offers a "free internship" then requests ₹300–₹1500 as a registration, training
+                        material,
+                        or certificate processing fee. The fee is the product — no real internship exists.</div>
+                </div>
+            </div>
+            <div class="tl-item">
+                <div class="tl-dot-col">
+                    <div class="tl-dot"></div>
+                </div>
+                <div class="tl-body">
+                    <div class="tl-num">⚡ Type 02</div>
+                    <div class="tl-title">Urgency Manipulation</div>
+                    <div class="tl-desc">"Only 15 seats left." "Apply within 24 hours." "Last date: tomorrow."
+                        Artificial scarcity
+                        is designed to prevent you from verifying the offer before committing.</div>
+                </div>
+            </div>
+            <div class="tl-item">
+                <div class="tl-dot-col">
+                    <div class="tl-dot"></div>
+                </div>
+                <div class="tl-body">
+                    <div class="tl-num">🏆 Type 03</div>
+                    <div class="tl-title">Unrealistic Promises</div>
+                    <div class="tl-desc">Guaranteed placement, letters of recommendation, certificates from Fortune 500
+                        companies
+                        — all designed to inflate perceived value before extracting a fee.</div>
+                </div>
+            </div>
+            <div class="tl-item">
+                <div class="tl-dot-col">
+                    <div class="tl-dot"></div>
+                </div>
+                <div class="tl-body">
+                    <div class="tl-num">📲 Type 04</div>
+                    <div class="tl-title">Informal Channel Pressure</div>
+                    <div class="tl-desc">Using WhatsApp, personal UPI IDs, and bit.ly links instead of corporate
+                        channels is a
+                        hallmark of scam operations — legitimate companies never recruit this way.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ FOOTER ══ -->
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-top">
+                <div>
+                    <div class="footer-brand"><span class="f-deva">बा</span><span class="f-lat">cho</span></div>
+                    <p class="footer-tagline">Protecting students from modern internship scams through transparent
+                        AI-powered
+                        analysis.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-col">
+                        <h5>Product</h5>
+                        <a href="#detect">Detector</a>
+                        <a href="#how">How it works</a>
+                        <a href="#scams">Scam types</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Mission</h5>
+                        <a href="#">SDG 4 — Education</a>
+                        <a href="#">SDG 8 — Decent Work</a>
+                        <a href="#">Report a scam</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-copy">© 2025 बाcho. Built for student safety. Open source.</div>
+                <div class="footer-sdgs">
+                    <span class="sdg">SDG 4</span>
+                    <span class="sdg">SDG 8</span>
+                    <span class="sdg">INDIA</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        /* ═══════════════════════════════════════════════
+           CURSOR
+        ═══════════════════════════════════════════════ */
+        const cur = document.getElementById('cursor');
+        let mx = 0, my = 0;
+        document.addEventListener('mousemove', e => {
+            mx = e.clientX; my = e.clientY;
+            cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+        });
+        document.querySelectorAll('a,button,.sample-pill,.quick-btn').forEach(el => {
+            el.addEventListener('mouseenter', () => cur.classList.add('expand'));
+            el.addEventListener('mouseleave', () => cur.classList.remove('expand'));
+        });
+        document.addEventListener('mousedown', () => cur.classList.add('click'));
+        document.addEventListener('mouseup', () => cur.classList.remove('click'));
+
+        /* ═══════════════════════════════════════════════
+           CANVAS BACKGROUND
+        ═══════════════════════════════════════════════ */
+        (function () {
+            const cv = document.getElementById('bg-canvas');
+            const ctx = cv.getContext('2d');
+            let W, H;
+            const resize = () => { W = cv.width = innerWidth; H = cv.height = innerHeight; };
+            resize(); window.addEventListener('resize', resize);
+            const particles = Array.from({ length: 60 }, () => ({
+                x: Math.random() * innerWidth, y: Math.random() * innerHeight,
+                vx: (Math.random() - .5) * 0.3, vy: (Math.random() - .5) * 0.3,
+                r: Math.random() * 1.2 + 0.3,
+                a: Math.random() * 0.4 + 0.05
+            }));
+            function draw() {
+                ctx.clearRect(0, 0, W, H);
+                particles.forEach(p => {
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+                    if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255,255,255,${p.a})`;
+                    ctx.fill();
+                });
+                // Draw faint connections
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const d = Math.sqrt(dx * dx + dy * dy);
+                        if (d < 120) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = `rgba(255,255,255,${0.035 * (1 - d / 120)})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        }
+                    }
+                }
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
+        /* ═══════════════════════════════════════════════
+           SCROLL REVEAL
+        ═══════════════════════════════════════════════ */
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+        }, { threshold: 0.12 });
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+        /* ═══════════════════════════════════════════════
+           SAMPLES
+        ═══════════════════════════════════════════════ */
+        const SAMPLES = {
+            scam1: `Congratulations! 🎉 You have been selected for a FREE virtual internship at TechGrowth Solutions Pvt Ltd!
+
+Duration: 4 weeks | Mode: Online | Certificate: Yes
+
+To confirm your seat, you need to pay a one-time registration fee of ₹999 only. This covers your training material, access to our learning portal, and your internship completion certificate.
+
+LIMITED SEATS AVAILABLE! Only 15 spots remaining. Transfer the amount via UPI to 9XXXXXXXX01 and send the screenshot to confirm enrollment.
+
+Don't miss this opportunity! Apply NOW before the deadline. Last date: Tomorrow 11:59 PM. For queries WhatsApp: 9XXXXXXXX01`,
+
+            scam2: `Hi [Student Name], Greetings from Digital Careers Hub!
+
+We are offering a FREE internship opportunity in Digital Marketing and Web Development.
+
+This is a completely free internship! No cost at all.
+
+After completing the internship (Week 4), you will need to pay ₹500 as certificate processing charges. This is mandatory to receive your official certificate.
+
+Hurry! Only 20 seats left. Apply within 24 hours. Register here: bit.ly/fakelink123`,
+
+            legit: `Dear Applicant, Thank you for applying for the Software Engineering Intern position at Infosys.
+
+You have been shortlisted for the next round of interviews.
+
+Interview Details:
+- Date: 15th January 2025
+- Mode: Video Call (Google Meet)
+- Stipend: ₹15,000/month
+
+There are NO fees of any kind required at any stage of our recruitment process. Any request for payment is NOT from Infosys.
+
+For verification, please visit careers.infosys.com or call our official HR at 1800-XXX-XXXX.
+
+Best regards, Infosys HR Team`,
+
+            medium: `Hey! We're looking for marketing interns at our startup — GrowthHive. It's a 6-week online program.
+
+You'll get hands-on experience, certificate of completion, and potential PPO based on performance.
+
+We do have a small training deposit of ₹300 which is refunded on successful completion of the program.
+
+Interested? Reply ASAP — we're filling up quickly. Team GrowthHive`
+        };
+
+        /* ═══════════════════════════════════════════════
+           DETECTION ENGINE
+        ═══════════════════════════════════════════════ */
+        const PAY = [/₹\s*\d+/gi, /rs\.?\s*\d+/gi, /registration\s*(fee|charge|amount)/gi, /pay\s+(a|the|only|just|small)?\s*(fee|amount|charge)/gi, /certificate\s*(fee|charge|cost|payment)/gi, /training\s*(fee|charge|deposit)/gi, /upi|gpay|paytm|phonepe|neft|transfer\s+the\s+amount/gi, /processing\s+(fee|charge)/gi, /security\s+deposit/gi];
+        const URG = [/limited\s+seats?/gi, /apply\s+(now|immediately|asap|today)/gi, /hurry[!.]*/gi, /last\s+chance/gi, /only\s+\d+\s+(spots?|seats?)\s*(left|remaining)?/gi, /don't\s+miss/gi, /within\s+24\s+hours?/gi, /reply\s+asap/gi, /\d+\s+seats?\s+(left|remaining)/gi];
+        const FREE = [/free\s+internship/gi, /no\s+cost\s+at\s+all/gi, /completely\s+free/gi, /zero\s+(cost|fee)/gi];
+        const PROM = [/guaranteed\s+(placement|job)/gi, /100%\s+(job|placement)/gi, /placement\s+assistance/gi, /letter\s+of\s+recommendation/gi];
+        const BEH = [/send\s+(the\s+)?screenshot/gi, /whatsapp.*\d{10}|\d{10}.*whatsapp/gi, /bit\.ly|tinyurl/gi];
+
+        function cm(t, ps) { let n = 0; for (const p of ps) { const m = t.match(p); if (m) n += m.length; } return n; }
+        function escH(t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'); }
+        function esc(s) { return s.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&'); }
+
+        function detect(text) {
+            const p = cm(text, PAY), u = cm(text, URG), f = cm(text, FREE), pr = cm(text, PROM), b = cm(text, BEH);
+            const hasP = p > 0, hasF = f > 0, hasC = /certificate/i.test(text);
+            let s = p * 20 + u * 10 + f * 15 + pr * 8 + b * 12;
+            if (hasF && hasP) s = Math.max(s, 72);
+            if (hasF && hasP && hasC) s = Math.max(s, 78);
+            if (/upi|gpay|paytm|phonepe/i.test(text)) s = Math.max(s, 70);
+            s = Math.max(0, Math.min(100, Math.round(s)));
+            const sigs = [
+                { n: 'Payment Intent', v: Math.min(100, p * 22), c: '#ff453a' },
+                { n: 'Urgency Tactics', v: Math.min(100, u * 14), c: '#ff9f0a' },
+                { n: '"Free" + Pay Pattern', v: Math.min(100, f * 28), c: '#0a84ff' },
+                { n: 'Unrealistic Promises', v: Math.min(100, pr * 16), c: '#bf5af2' },
+                { n: 'Behavioral Pressure', v: Math.min(100, b * 10), c: '#ff6961' },
+            ];
+            const flags = [];
+            if (p > 0) flags.push({ i: '💸', t: `${p} payment-related phrase${p > 1 ? 's' : ''} detected` });
+            if (hasF && hasP) flags.push({ i: '🎭', t: 'Contradictory "free" offer followed by payment request' });
+            if (u >= 2) flags.push({ i: '⏰', t: `${u} urgency pressure signals detected` });
+            if (pr > 0) flags.push({ i: '🚫', t: `${pr} unrealistic guarantee${pr > 1 ? 's' : ''} found` });
+            if (/upi|gpay|paytm|phonepe/i.test(text)) flags.push({ i: '📲', t: 'Personal UPI/payment channel shared — not official' });
+            if (/bit\.ly|tinyurl/i.test(text)) flags.push({ i: '🔗', t: 'Shortened suspicious link detected' });
+            if (/whatsapp.*\d{10}|\d{10}.*whatsapp/i.test(text)) flags.push({ i: '📱', t: 'WhatsApp number used as official contact' });
+            if (/send screenshot/i.test(text)) flags.push({ i: '📸', t: 'Payment screenshot requested — pressure tactic' });
+            if (flags.length === 0) { flags.push({ i: '✓', t: 'No payment requests detected' }); flags.push({ i: '✓', t: 'Professional communication patterns observed' }); }
+            let lvl, cls, chip;
+            if (s >= 65) { lvl = 'High Risk'; cls = 'high'; chip = '⚠ High Risk'; }
+            else if (s >= 35) { lvl = 'Medium Risk'; cls = 'medium'; chip = '~ Medium Risk'; }
+            else { lvl = 'Low Risk'; cls = 'safe'; chip = '✓ Low Risk'; }
+            let type;
+            if (s >= 65) { type = hasF && hasP ? 'Fake Free Internship Scam' : p > 0 ? 'Payment Trap Scam' : 'Behavioral Manipulation'; }
+            else if (s >= 35) { type = 'Suspicious — Verify before responding'; }
+            else { type = 'Appears Legitimate' }
+            let reco;
+            if (s >= 65) reco = { i: '🚨', t: `<strong>Do not pay or respond.</strong> This message shows multiple hallmarks of an internship scam. Never transfer money to confirm an offer. Report to your college placement cell and cybercrime.gov.in.`, c: 'high' };
+            else if (s >= 35) reco = { i: '🔍', t: `<strong>Proceed with caution.</strong> Verify the company on LinkedIn and MCA India before engaging. Request an official offer letter on company letterhead. Never pay before your first working day.`, c: 'medium' };
+            else reco = { i: '✅', t: `<strong>This message appears genuine.</strong> No major scam patterns detected. Always verify independently — never share financial details via WhatsApp.`, c: 'safe' };
+            const highlights = [
+                { patterns: PAY, cls: 'hl-pay' },
+                { patterns: URG, cls: 'hl-urg' },
+                { patterns: FREE, cls: 'hl-free' },
+                { patterns: PROM, cls: 'hl-prom' },
+                { patterns: BEH, cls: 'hl-beh' }
+            ];
+
+            const matches = [];
+            highlights.forEach(h => {
+                h.patterns.forEach(p => {
+                    p.lastIndex = 0;
+                    let m;
+                    while ((m = p.exec(text)) !== null) {
+                        matches.push({ start: m.index, end: m.index + m[0].length, cls: h.cls, text: m[0] });
+                    }
+                });
+            });
+
+            // Sort and remove overlaps
+            matches.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+            const filtered = [];
+            let lastEnd = 0;
+            for (const m of matches) {
+                if (m.start >= lastEnd) {
+                    filtered.push(m);
+                    lastEnd = m.end;
+                }
+            }
+
+            // Construct highlighted HTML
+            let hl = "";
+            let curr = 0;
+            for (const m of filtered) {
+                hl += escH(text.substring(curr, m.start));
+                hl += `<mark class="${m.cls}">${escH(m.text)}</mark>`;
+                curr = m.end;
+            }
+            hl += escH(text.substring(curr));
+
+            return { s, sigs, flags, lvl, cls, chip, type, reco, hl };
+        }
+
+        /* ═══════════════════════════════════════════════
+           UI HELPERS
+        ═══════════════════════════════════════════════ */
+        function updateCount() {
+            const n = document.getElementById('msgInput').value.length;
+            document.getElementById('charCount').textContent = n + ' chars';
+            document.getElementById('inputMeta').textContent = n + ' characters · Ready';
+        }
+        function load(k) {
+            document.getElementById('msgInput').value = SAMPLES[k];
+            updateCount();
+            document.getElementById('results').style.display = 'none';
+            resetRisk();
+        }
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+        function resetRisk() {
+            document.body.classList.remove('risk-high', 'risk-medium', 'risk-safe');
+            document.getElementById('alarmBar').classList.remove('show');
+            document.getElementById('alarmLayer').classList.remove('armed');
+        }
+
+        /* ═══════════════════════════════════════════════
+           THINKING ANIMATION — Premium counter
+        ═══════════════════════════════════════════════ */
+        const STAGES = [
+            { pct: 18, label: 'PARSING TEXT STRUCTURE', orb: '🔤' },
+            { pct: 36, label: 'EXTRACTING FEATURES', orb: '🧬' },
+            { pct: 55, label: 'RUNNING PATTERN MATCHER', orb: '🔍' },
+            { pct: 74, label: 'CLASSIFYING RISK VECTORS', orb: '⚡' },
+            { pct: 90, label: 'GENERATING REPORT', orb: '📊' },
+            { pct: 100, label: 'ANALYSIS COMPLETE', orb: '✓' },
+        ];
+
+        async function animateCount(from, to, el, dur = 500) {
+            const start = performance.now();
+            return new Promise(res => {
+                function step(now) {
+                    const p = Math.min((now - start) / dur, 1);
+                    const v = Math.round(from + (to - from) * p);
+                    el.innerHTML = v + '<span>%</span>';
+                    if (p < 1) requestAnimationFrame(step);
+                    else res();
+                }
+                requestAnimationFrame(step);
+            });
+        }
+
+        async function runThinking() {
+            const thinking = document.getElementById('thinking');
+            thinking.classList.add('active');
+            document.getElementById('results').style.display = 'none';
+
+            // Reset
+            for (let i = 0; i < 5; i++) { document.getElementById('step' + i).className = 'think-step'; }
+            document.getElementById('thinkPct').innerHTML = '0<span>%</span>';
+            document.getElementById('thinkBar').style.width = '0%';
+            document.getElementById('thinkOrb').textContent = '🧠';
+
+            let prevPct = 0;
+            for (let i = 0; i < STAGES.length; i++) {
+                const st = STAGES[i];
+                document.getElementById('thinkStage').textContent = st.label;
+                document.getElementById('thinkOrb').textContent = st.orb;
+                document.getElementById('thinkBar').style.width = st.pct + '%';
+
+                await animateCount(prevPct, st.pct, document.getElementById('thinkPct'), 480);
+                prevPct = st.pct;
+
+                if (i < 5) {
+                    document.getElementById('step' + i).className = 'think-step active';
+                    await sleep(320);
+                    document.getElementById('step' + i).className = 'think-step done';
+                }
+                await sleep(120);
+            }
+            await sleep(200);
+            document.getElementById('thinkOrb').textContent = '🧠';
+        }
+
+        /* ═══════════════════════════════════════════════
+           ALARM
+        ═══════════════════════════════════════════════ */
+        function triggerAlarm(cls) {
+            document.body.classList.add('risk-' + cls);
+            if (cls === 'high') {
+                const al = document.getElementById('alarmLayer');
+                al.classList.add('armed');
+                setTimeout(() => al.classList.remove('armed'), 2000);
+                document.getElementById('alarmBar').classList.add('show');
+                setTimeout(() => document.getElementById('alarmBar').classList.remove('show'), 5500);
+                if (navigator.vibrate) navigator.vibrate([200, 80, 200, 80, 400]);
+            }
+        }
+
+        /* ═══════════════════════════════════════════════
+           MAIN ANALYZE
+        ═══════════════════════════════════════════════ */
+        function startThinkingUI() {
+            document.getElementById('scanBtn').disabled = true;
+            document.getElementById('btnLoader').style.display = 'inline-block';
+            document.getElementById('btnLabel').textContent = 'Analyzing...';
+            document.getElementById('inputZone').style.display = 'none';
+            document.getElementById('thinking').classList.add('active');
+        }
+
+        function stopThinkingUI() {
+            document.getElementById('thinking').classList.remove('active');
+            document.getElementById('inputZone').style.display = 'block';
+            document.getElementById('scanBtn').disabled = false;
+            document.getElementById('btnLoader').style.display = 'none';
+            document.getElementById('btnLabel').textContent = 'Analyze with बाcho';
+        }
+
+        function showResults(backendData) {
+            const text = document.getElementById("msgInput").value;
+            // Use local detect() to get rich UI data (highlights, signals, etc.)
+            const result = detect(text);
+            
+            // Override score and risk with backend data if available
+            if (backendData) {
+                result.s = backendData.score;
+                if (backendData.risk === "HIGH") {
+                    result.lvl = 'High Risk';
+                    result.cls = 'high';
+                    result.chip = '⚠ High Risk';
+                } else if (backendData.risk === "MEDIUM") {
+                    result.lvl = 'Medium Risk';
+                    result.cls = 'medium';
+                    result.chip = '~ Medium Risk';
+                } else {
+                    result.lvl = 'Low Risk';
+                    result.cls = 'safe';
+                    result.chip = '✓ Low Risk';
+                }
+                result.vt = backendData.vt;
+            }
+            
+            renderResults(result);
+            triggerAlarm(result.cls);
+        }
+
+        async function doAnalyze() {
+            const text = document.getElementById("msgInput").value;
+
+            if (!text.trim()) return;
+
+            startThinkingUI();
+
+            // Run the thinking animation
+            await runThinking();
+
+            try {
+                const res = await fetch("http://127.0.0.1:5000/analyze", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ message: text })
+                });
+
+                const data = await res.json();
+
+                stopThinkingUI();
+                showResults(data);
+
+            } catch (err) {
+                console.error(err);
+                // Fallback to local analysis if backend fails
+                stopThinkingUI();
+                showResults(null);
+                console.log("Using local analysis fallback.");
+            }
+        }
+        /* ═══════════════════════════════════════════════
+           RENDER
+        ═══════════════════════════════════════════════ */
+        function renderResults(r) {
+            // Risk banner
+            const banner = document.getElementById('rrBanner');
+            banner.className = 'result-risk ' + r.cls;
+            const chip = document.getElementById('rrChip');
+            chip.className = 'rr-chip ' + r.cls;
+            chip.innerHTML = `<span class="rr-chip-dot"></span>${r.chip}`;
+            document.getElementById('rrLevel').textContent = r.lvl;
+            document.getElementById('rrType').textContent = r.type;
+
+            // Gauge
+            const gaugeColors = { high: '#ff453a', medium: '#ff9f0a', safe: '#34c759' };
+            const fill = document.getElementById('gaugeFill');
+            const circ = 339;
+            fill.style.stroke = gaugeColors[r.cls];
+            fill.style.strokeDashoffset = circ;
+            document.getElementById('gaugeNum').textContent = r.s;
+            document.getElementById('gaugeNum').style.color = gaugeColors[r.cls];
+            requestAnimationFrame(() => {
+                fill.style.strokeDashoffset = circ - (r.s / 100) * circ;
+            });
+
+            // Signals
+            document.getElementById('sigBars').innerHTML = r.sigs.map(s => `
+    <div class="sig-bar-item">
+      <div class="sig-bar-meta">
+        <span class="sig-bar-name">${s.n}</span>
+        <span class="sig-bar-val">${s.v}%</span>
+      </div>
+      <div class="sig-track">
+        <div class="sig-fill" data-target="${s.v}" style="background:${s.c}"></div>
+      </div>
+    </div>`).join('');
+
+            // Flags
+            document.getElementById('flagsEl').innerHTML = r.flags.map((f, i) => `
+    <div class="flag" style="animation-delay:${i * 0.07}s">
+      <span class="flag-ico">${f.i}</span>
+      <span>${f.t}</span>
+    </div>`).join('');
+
+            // Highlighted
+            document.getElementById('hlText').innerHTML = r.hl;
+
+            // Recommendation
+            const rb = document.getElementById('recoBox');
+            rb.className = 'reco-box ' + r.reco.c;
+            rb.innerHTML = `<span class="reco-ico">${r.reco.i}</span><span>${r.reco.t}</span>`;
+
+            // VirusTotal
+            const vtPane = document.getElementById('vtPane');
+            if (r.vt && r.vt.length > 0) {
+                vtPane.style.display = 'block';
+                document.getElementById('vtList').innerHTML = r.vt.map(v => {
+                    if (v.status === 'not_found_or_error') {
+                        return `<div class="vt-item"><span class="vt-url">${v.url}</span><span class="vt-stat">NO DATA / SCANNING...</span></div>`;
+                    }
+                    const isMal = v.malicious > 0;
+                    const isSusp = v.suspicious > 0;
+                    const cls = isMal ? 'danger' : isSusp ? 'warn' : 'safe';
+                    const msg = isMal ? `${v.malicious}/${v.total} MALICIOUS` : isSusp ? `${v.suspicious} SUSPICIOUS` : 'CLEAN / SAFE';
+                    return `
+                        <div class="vt-item">
+                            <span class="vt-url">${v.url}</span>
+                            <span class="vt-stat ${cls}">${msg}</span>
+                        </div>`;
+                }).join('');
+            } else {
+                vtPane.style.display = 'none';
+            }
+
+            // Show
+            document.getElementById('results').style.display = 'block';
+
+            // Animate bars
+            requestAnimationFrame(() => {
+                document.querySelectorAll('.sig-fill').forEach(b => b.style.width = b.dataset.target + '%');
+            });
+
+            setTimeout(() => {
+                document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+
+        /* ═══════════════════════════════════════════════
+           GMAIL INTEGRATION LOGIC
+        ═══════════════════════════════════════════════ */
+        let fetchedEmails = []; // Global store for click interaction
+        let currentRiskFilter = 'ALL';
+
+        async function checkAuthStatus() {
+            try {
+                const res = await fetch('/auth/status');
+                const data = await res.json();
+                if (data.authenticated) {
+                    document.getElementById('authSection').style.display = 'none';
+                    document.getElementById('inboxView').style.display = 'block';
+                    if (data.isMock) {
+                        document.getElementById('inboxStatus').innerHTML = '<span style="color: var(--amber)">DEMO MODE ACTIVE</span> (Add credentials to .env for real Gmail access)';
+                    }
+                    fetchEmails();
+                }
+            } catch (err) {
+                console.error('Auth check failed', err);
+            }
+        }
+
+        async function fetchEmails() {
+            const list = document.getElementById('emailList');
+            list.innerHTML = `
+                <div class="loading-inbox">
+                    <div class="btn-loader" style="display: block; width: 24px; height: 24px; border-width: 2px;"></div>
+                    <span>Fetching and analyzing your emails...</span>
+                </div>`;
+            
+            try {
+                const res = await fetch('/emails/fetch');
+                if (res.status === 401) {
+                    document.getElementById('authSection').style.display = 'block';
+                    document.getElementById('inboxView').style.display = 'none';
+                    return;
+                }
+                
+                const emails = await res.json();
+                fetchedEmails = emails; // Store for later
+                renderEmailList(emails);
+                
+                // Bonus: Check for high risk and notify
+                const highRisk = emails.find(e => e.risk === "HIGH");
+                if (highRisk) {
+                    showHighRiskNotification(highRisk);
+                }
+            } catch (err) {
+                list.innerHTML = `<div class="loading-inbox"><span>Error: ${err.message}</span></div>`;
+            }
+        }
+
+        function renderEmailList(emails) {
+            const list = document.getElementById('emailList');
+            
+            // Update tab counts
+            document.getElementById('count-all').textContent = emails.length;
+            document.getElementById('count-high').textContent = emails.filter(e => e.risk === 'HIGH').length;
+            document.getElementById('count-medium').textContent = emails.filter(e => e.risk === 'MEDIUM').length;
+            document.getElementById('count-safe').textContent = emails.filter(e => e.risk === 'LOW' || e.risk === 'SAFE').length;
+
+            const filteredEmails = currentRiskFilter === 'ALL' 
+                ? emails 
+                : emails.filter(e => {
+                    if (currentRiskFilter === 'LOW') return e.risk === 'LOW' || e.risk === 'SAFE';
+                    return e.risk === currentRiskFilter;
+                });
+
+            if (filteredEmails.length === 0) {
+                const emptyMsg = currentRiskFilter === 'ALL' 
+                    ? "No recent emails found in Inbox." 
+                    : `No ${currentRiskFilter.toLowerCase()} risk emails found.`;
+                list.innerHTML = `<div class="loading-inbox"><span>${emptyMsg}</span></div>`;
+                return;
+            }
+
+            list.innerHTML = filteredEmails.map(email => `
+                <div class="email-item" onclick="viewEmail('${email.id}')">
+                    <div class="email-from">${email.from.split(' <')[0]}</div>
+                    <div class="email-content">
+                        <div class="email-subject">${email.subject}</div>
+                        <div class="email-snippet">${email.snippet}</div>
+                        <div class="attachment-row">
+                            ${email.attachments.map(a => `
+                                <span class="attachment-pill ${a.risk.risk === 'HIGH' ? 'danger' : ''}">
+                                    📎 ${a.filename}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="email-actions">
+                        <div class="email-risk">
+                            <span class="risk-badge ${email.risk.toLowerCase()}">
+                                ${email.risk} RISK
+                            </span>
+                        </div>
+                        <button class="btn-spam" onclick="moveToSpam(event, '${email.id}')">
+                            MOVE TO SPAM
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            const highRiskCount = emails.filter(e => e.risk === 'HIGH').length;
+            document.getElementById('moveAllSpamBtn').style.display = highRiskCount > 0 ? 'inline-block' : 'none';
+            document.getElementById('inboxStatus').textContent = `Analyzed ${emails.length} emails. ${highRiskCount > 0 ? highRiskCount + ' high risk threats found.' : ''}`;
+        }
+
+        function filterInbox(risk) {
+            currentRiskFilter = risk;
+            
+            // Update UI tabs
+            document.querySelectorAll('.inbox-tab').forEach(tab => tab.classList.remove('active'));
+            const tabId = risk === 'ALL' ? 'tab-all' : 
+                         risk === 'HIGH' ? 'tab-high' : 
+                         risk === 'MEDIUM' ? 'tab-medium' : 'tab-safe';
+            document.getElementById(tabId).classList.add('active');
+            
+            renderEmailList(fetchedEmails);
+        }
+
+        function showHighRiskNotification(email) {
+            // Simple notification or visual cue
+            console.warn("HIGH RISK DETECTED", email.subject);
+            // We could use browser notifications if permitted
+            if (Notification.permission === "granted") {
+                new Notification("Bacho: High Risk Scam Detected", {
+                    body: `Subject: ${email.subject}\nFrom: ${email.from}`,
+                    icon: "/favicon.ico"
+                });
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        }
+
+        function viewEmail(id) {
+            const email = fetchedEmails.find(e => e.id === id);
+            if (!email) return;
+
+            // 1. Copy content to detector
+            const input = document.getElementById('msgInput');
+            input.value = email.body;
+            
+            // 2. Update UI counters
+            updateCount();
+
+            // 3. Scroll to detector
+            document.getElementById('detect').scrollIntoView({ behavior: 'smooth' });
+
+            // 4. Trigger deep analysis
+            setTimeout(() => {
+                doAnalyze();
+            }, 600);
+        }
+
+        async function moveToSpam(event, id) {
+            if (event) event.stopPropagation();
+            
+            const btn = event ? event.target : null;
+            if (btn) {
+                btn.classList.add('loading');
+                btn.textContent = 'MOVING...';
+            }
+
+            try {
+                const res = await fetch('/emails/spam', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messageId: id })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    // Remove from local list and re-render
+                    fetchedEmails = fetchedEmails.filter(e => e.id !== id);
+                    renderEmailList(fetchedEmails);
+                } else {
+                    alert('Failed to move to spam: ' + data.error);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error: ' + err.message);
+            } finally {
+                if (btn) {
+                    btn.classList.remove('loading');
+                    btn.textContent = 'MOVE TO SPAM';
+                }
+            }
+        }
+
+        async function moveAllHighRiskToSpam() {
+            const highRisk = fetchedEmails.filter(e => e.risk === 'HIGH');
+            if (highRisk.length === 0) return;
+            
+            if (!confirm(`Move all ${highRisk.length} high-risk emails to spam?`)) return;
+            
+            const btn = document.getElementById('moveAllSpamBtn');
+            btn.disabled = true;
+            btn.textContent = 'MOVING...';
+
+            let count = 0;
+            for (const email of highRisk) {
+                try {
+                    const res = await fetch('/emails/spam', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ messageId: email.id })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        fetchedEmails = fetchedEmails.filter(e => e.id !== email.id);
+                        count++;
+                    }
+                } catch (err) {
+                    console.error('Failed to move ' + email.id, err);
+                }
+            }
+            
+            alert(`Moved ${count} emails to spam.`);
+            renderEmailList(fetchedEmails);
+            btn.disabled = false;
+            btn.textContent = '⚠️ Move All High Risk to Spam';
+        }
+
+        // Initialize auth check on load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAuthStatus();
+            
+            // Auto-refresh every 5 minutes
+            setInterval(() => {
+                const inboxView = document.getElementById('inboxView');
+                if (inboxView.style.display !== 'none') {
+                    fetchEmails();
+                }
+            }, 5 * 60 * 1000);
+        });
+    </script>
+</body>
+
+</html>
